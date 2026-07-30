@@ -121,9 +121,27 @@ namespace MythicForge.Controllers
         }
 
         // POST: Creatures/Preview  (AJAX) -> generates a live image with Amazon Bedrock.
+        /// <summary>
+        /// Whether Amazon Bedrock image generation is enabled (Web.config app setting
+        /// "BedrockImageGenerationEnabled"). Enabled by default; only the literal "false"
+        /// disables it.
+        /// </summary>
+        private static bool IsImageGenerationEnabled()
+        {
+            var raw = System.Configuration.ConfigurationManager.AppSettings["BedrockImageGenerationEnabled"];
+            return string.IsNullOrWhiteSpace(raw)
+                || !raw.Trim().Equals("false", StringComparison.OrdinalIgnoreCase);
+        }
+
         [HttpPost]
         public async Task<ActionResult> Preview(int creatureTypeId, int colorId, int[] selectedOptionIds)
         {
+            // Guard the endpoint server-side so it's fully off when the feature is disabled.
+            if (!IsImageGenerationEnabled())
+            {
+                return JsonPayload(new { ok = false, error = "Image generation is disabled." });
+            }
+
             try
             {
                 var creature = Db.CreatureTypes
@@ -433,7 +451,8 @@ namespace MythicForge.Controllers
                         return c;
                     })
                     .ToList(),
-                Colors = Db.Colors.OrderBy(c => c.DisplayOrder).ToList()
+                Colors = Db.Colors.OrderBy(c => c.DisplayOrder).ToList(),
+                ImageGenerationEnabled = IsImageGenerationEnabled()
             };
         }
     }
