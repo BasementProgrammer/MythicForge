@@ -186,6 +186,10 @@
                         params.append('selectedOptionIds', el.value);
                     });
 
+                    // Include the anti-forgery token so the endpoint only accepts same-site requests.
+                    var token = document.querySelector('input[name="__RequestVerificationToken"]');
+                    if (token) { params.append('__RequestVerificationToken', token.value); }
+
                     fetch(previewUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

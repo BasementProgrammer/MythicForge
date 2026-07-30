@@ -133,13 +133,56 @@ namespace MythicForge.Controllers
                 || !raw.Trim().Equals("false", StringComparison.OrdinalIgnoreCase);
         }
 
+        // Simple fixed-window, per-client rate limit for the (paid) Bedrock endpoint.
+        private const int PreviewMaxRequestsPerWindow = 15;
+        private static readonly TimeSpan PreviewRateWindow = TimeSpan.FromMinutes(5);
+
+        private sealed class RequestCounter { public int Count; }
+
+        /// <summary>
+        /// Returns true if the caller (by IP) has exceeded the allowed number of preview
+        /// requests in the current window. Limits abuse/cost-runaway of the Bedrock endpoint.
+        /// </summary>
+        private bool PreviewRateLimitExceeded()
+        {
+            var ip = Request != null ? (Request.UserHostAddress ?? "unknown") : "unknown";
+            var key = "preview-ratelimit:" + ip;
+            var cache = System.Web.HttpRuntime.Cache;
+
+            var counter = cache[key] as RequestCounter;
+            if (counter == null)
+            {
+                cache.Insert(key, new RequestCounter { Count = 1 }, null,
+                    DateTime.UtcNow.Add(PreviewRateWindow),
+                    System.Web.Caching.Cache.NoSlidingExpiration);
+                return false;
+            }
+
+            lock (counter)
+            {
+                if (counter.Count >= PreviewMaxRequestsPerWindow)
+                {
+                    return true;
+                }
+                counter.Count++;
+                return false;
+            }
+        }
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<ActionResult> Preview(int creatureTypeId, int colorId, int[] selectedOptionIds)
         {
             // Guard the endpoint server-side so it's fully off when the feature is disabled.
             if (!IsImageGenerationEnabled())
             {
                 return JsonPayload(new { ok = false, error = "Image generation is disabled." });
+            }
+
+            // Throttle per client IP so the paid Bedrock call can't be abused for cost/DoS.
+            if (PreviewRateLimitExceeded())
+            {
+                return JsonPayload(new { ok = false, error = "Too many preview requests. Please wait a moment and try again." });
             }
 
             try
@@ -179,10 +222,16 @@ namespace MythicForge.Controllers
 
                 return JsonPayload(new { ok = true, image = dataUri, prompt });
             }
+            catch (InvalidOperationException ex)
+            {
+                // Controlled, user-safe messages (e.g. content filtered / no image produced).
+                return JsonPayload(new { ok = false, error = ex.Message });
+            }
             catch (Exception ex)
             {
-                // Return a friendly payload so the page can show a message instead of failing.
-                return JsonPayload(new { ok = false, error = ex.Message });
+                // Log details server-side; do NOT leak internal/AWS error detail to the client.
+                System.Diagnostics.Trace.TraceError("Preview generation failed: " + ex);
+                return JsonPayload(new { ok = false, error = "Unable to generate a preview right now. Please try again later." });
             }
         }
 

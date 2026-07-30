@@ -12,7 +12,10 @@ namespace MythicForge.Services
     {
         private const int SaltSize = 16;
         private const int HashSize = 32;
-        private const int Iterations = 10000;
+        // PBKDF2-SHA256 with a modern iteration count (OWASP-aligned) rather than the
+        // legacy SHA1 default and low iteration count.
+        private const int Iterations = 210000;
+        private static readonly HashAlgorithmName Algorithm = HashAlgorithmName.SHA256;
 
         public static string Hash(string password)
         {
@@ -22,7 +25,7 @@ namespace MythicForge.Services
                 rng.GetBytes(salt);
             }
 
-            using (var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations))
+            using (var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, Algorithm))
             {
                 byte[] hash = pbkdf2.GetBytes(HashSize);
                 byte[] combined = new byte[SaltSize + HashSize];
@@ -57,7 +60,7 @@ namespace MythicForge.Services
             byte[] salt = new byte[SaltSize];
             Buffer.BlockCopy(combined, 0, salt, 0, SaltSize);
 
-            using (var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations))
+            using (var pbkdf2 = new Rfc2898DeriveBytes(password, salt, Iterations, Algorithm))
             {
                 byte[] hash = pbkdf2.GetBytes(HashSize);
                 int diff = 0;
