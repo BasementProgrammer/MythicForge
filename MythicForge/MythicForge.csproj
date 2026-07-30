@@ -113,6 +113,15 @@
     <Reference Include="AWSSDK.BedrockRuntime">
       <HintPath>..\packages\AWSSDK.BedrockRuntime.3.7.514.21\lib\net45\AWSSDK.BedrockRuntime.dll</HintPath>
     </Reference>
+    <Reference Include="AWSXRayRecorder.Core">
+      <HintPath>..\packages\AWSXRayRecorder.Core.2.16.0\lib\net45\AWSXRayRecorder.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="AWSXRayRecorder.Handlers.AspNet">
+      <HintPath>..\packages\AWSXRayRecorder.Handlers.AspNet.2.13.0\lib\net45\AWSXRayRecorder.Handlers.AspNet.dll</HintPath>
+    </Reference>
+    <Reference Include="AWSXRayRecorder.Handlers.AwsSdk">
+      <HintPath>..\packages\AWSXRayRecorder.Handlers.AwsSdk.2.14.0\lib\net45\AWSXRayRecorder.Handlers.AwsSdk.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Web.Infrastructure">
       <HintPath>..\packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
     </Reference>

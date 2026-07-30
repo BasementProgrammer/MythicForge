@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using Amazon.CDK;
 using Amazon.CDK.AWS.CodeBuild;
-using Amazon.CDK.AWS.CodeCommit;
 using Amazon.CDK.AWS.CodePipeline;
 using Amazon.CDK.AWS.CodePipeline.Actions;
+using Amazon.CDK.AWS.CodeStarConnections;
 using Amazon.CDK.AWS.ElasticBeanstalk;
 using Amazon.CDK.AWS.IAM;
 using Amazon.CDK.AWS.Lambda;
@@ -20,10 +20,11 @@ namespace MythicForgePipeline
         // Tweak these to match your environment.
         // ------------------------------------------------------------------
 
-        // Name of the existing CodeCommit repository holding the app source.
-        private const string RepositoryName = "MythicForge";
+        // GitHub repository owner and name.
+        private const string GitHubOwner = "BasementProgrammer";
+        private const string GitHubRepo = "MythicForge";
 
-        // Branch the pipeline watches. CodeCommit repos default to "main".
+        // Branch the pipeline watches.
         private const string SourceBranch = "main";
 
         // Repository layout. The source repo root contains everything (this cdk/
@@ -59,9 +60,15 @@ namespace MythicForgePipeline
                 : solutionStackOverride;
 
             // --------------------------------------------------------------
-            // Source: reference the existing CodeCommit repository.
+            // Source: GitHub via AWS CodeStar Connections.
+            // After first deploy, confirm the connection in the AWS Console
+            // under Developer Tools > Settings > Connections.
             // --------------------------------------------------------------
-            var repository = Repository.FromRepositoryName(this, "SourceRepo", RepositoryName);
+            var connection = new CfnConnection(this, "GitHubConnection", new CfnConnectionProps
+            {
+                ConnectionName = "MythicForge-GitHub",
+                ProviderType = "GitHub"
+            });
 
             // --------------------------------------------------------------
             // Elastic Beanstalk application + Windows environment.
@@ -79,7 +86,9 @@ namespace MythicForgePipeline
                 {
                     ManagedPolicy.FromAwsManagedPolicyName("AWSElasticBeanstalkWebTier"),
                     ManagedPolicy.FromAwsManagedPolicyName("AWSElasticBeanstalkWorkerTier"),
-                    ManagedPolicy.FromAwsManagedPolicyName("AWSElasticBeanstalkMulticontainerDocker")
+                    ManagedPolicy.FromAwsManagedPolicyName("AWSElasticBeanstalkMulticontainerDocker"),
+                    // Lets the X-Ray daemon on the instance upload trace segments.
+                    ManagedPolicy.FromAwsManagedPolicyName("AWSXRayDaemonWriteAccess")
                 }
             });
 
@@ -146,6 +155,28 @@ namespace MythicForgePipeline
                         // "LoadBalanced" for production.
                         OptionName = "EnvironmentType",
                         Value = "SingleInstance"
+                    },
+                    // Run the AWS X-Ray daemon on the instance so the app can submit traces.
+                    new CfnEnvironment.OptionSettingProperty
+                    {
+                        Namespace = "aws:elasticbeanstalk:xray",
+                        OptionName = "XRayEnabled",
+                        Value = "true"
+                    },
+                    // X-Ray SDK configuration passed to the app as environment variables.
+                    new CfnEnvironment.OptionSettingProperty
+                    {
+                        Namespace = "aws:elasticbeanstalk:application:environment",
+                        OptionName = "AWS_XRAY_TRACING_NAME",
+                        Value = "MythicForge"
+                    },
+                    new CfnEnvironment.OptionSettingProperty
+                    {
+                        Namespace = "aws:elasticbeanstalk:application:environment",
+                        // Don't throw if a subsegment is created without an active segment
+                        // (e.g. background/startup AWS calls); just log it.
+                        OptionName = "AWS_XRAY_CONTEXT_MISSING",
+                        Value = "LOG_ERROR"
                     }
                 }
             });
@@ -266,11 +297,13 @@ namespace MythicForgePipeline
                         StageName = "Source",
                         Actions = new[]
                         {
-                            new CodeCommitSourceAction(new CodeCommitSourceActionProps
+                            new CodeStarConnectionsSourceAction(new CodeStarConnectionsSourceActionProps
                             {
-                                ActionName = "CodeCommit_Source",
-                                Repository = repository,
+                                ActionName = "GitHub_Source",
+                                Owner = GitHubOwner,
+                                Repo = GitHubRepo,
                                 Branch = SourceBranch,
+                                ConnectionArn = connection.AttrConnectionArn,
                                 Output = sourceOutput
                             })
                         }
@@ -315,10 +348,16 @@ namespace MythicForgePipeline
                 Description = "Public endpoint of the Elastic Beanstalk environment."
             });
 
-            new CfnOutput(this, "RepositoryCloneUrlHttp", new CfnOutputProps
+            new CfnOutput(this, "GitHubRepositoryUrl", new CfnOutputProps
             {
-                Value = repository.RepositoryCloneUrlHttp,
-                Description = "HTTPS clone URL for the source CodeCommit repository."
+                Value = $"https://github.com/{GitHubOwner}/{GitHubRepo}",
+                Description = "Source GitHub repository URL."
+            });
+
+            new CfnOutput(this, "CodeStarConnectionArn", new CfnOutputProps
+            {
+                Value = connection.AttrConnectionArn,
+                Description = "CodeStar Connection ARN (must be confirmed in the console after first deploy)."
             });
         }
 
