@@ -1,0 +1,8 @@
+# CDK
+cdk.out/
+cdk.context.json
+
+# .NET build output
+bin/
+obj/
+*.user

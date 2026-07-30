@@ -1,0 +1,6 @@
+@{
+    var count = (int)(ViewBag.ItemCount ?? 0);
+}
+<li>
+    @Html.ActionLink("(" + count + " items)", "Index", "Cart", null, new { @class = "navbar-link" })
+</li>

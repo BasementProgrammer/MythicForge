@@ -1,0 +1,84 @@
+@using System.Linq
+@model IEnumerable<MythicForge.Models.CreatureType>
+@{
+    ViewBag.Title = "Creatures";
+
+    var categories = Model
+        .Where(c => !string.IsNullOrEmpty(c.Tags))
+        .SelectMany(c => c.Tags.Split(','))
+        .Select(t => t.Trim())
+        .Where(t => t.Length > 0)
+        .Distinct()
+        .OrderBy(t => t)
+        .ToList();
+}
+
+<h2>Choose a creature to build</h2>
+<p class="lead">Every creature is fully customizable. Pick one to start forging.</p>
+
+<div class="catalog-toolbar">
+    <label for="categoryFilter">Filter by category</label>
+    <select id="categoryFilter" class="form-control">
+        <option value="">All categories</option>
+        @foreach (var cat in categories)
+        {
+            <option value="@cat.ToLower()">@cat</option>
+        }
+    </select>
+    <span id="filterCount" class="text-muted"></span>
+</div>
+
+<div class="product-grid" id="creatureGrid">
+    @foreach (var creature in Model)
+    {
+        var tagList = string.Join(",", (creature.Tags ?? "")
+            .Split(',')
+            .Select(t => t.Trim().ToLower())
+            .Where(t => t.Length > 0));
+        <div class="product-card" data-tags="@tagList">
+            <div class="product-emoji">@creature.Emoji</div>
+            <h3 class="product-name">@creature.Name</h3>
+            <p class="product-desc">@creature.Description</p>
+            @if (!string.IsNullOrEmpty(creature.Tags))
+            {
+                <div class="product-tags">
+                    @foreach (var t in creature.Tags.Split(',').Select(x => x.Trim()).Where(x => x.Length > 0))
+                    {
+                        <span class="tag-chip">@t</span>
+                    }
+                </div>
+            }
+            <div><span class="product-price"><span class="from">from</span> @creature.BasePrice.ToString("C")</span></div>
+            @Html.ActionLink("Customize", "Customize", new { id = creature.Id }, new { @class = "btn btn-primary btn-block" })
+        </div>
+    }
+</div>
+
+<p id="noResults" class="text-muted" style="display:none;">No creatures match that category.</p>
+
+@section Scripts {
+    <script>
+        (function () {
+            var select = document.getElementById('categoryFilter');
+            var cards = Array.prototype.slice.call(document.querySelectorAll('#creatureGrid .product-card'));
+            var countEl = document.getElementById('filterCount');
+            var noResults = document.getElementById('noResults');
+
+            function applyFilter() {
+                var value = select.value;
+                var visible = 0;
+                cards.forEach(function (card) {
+                    var tags = (card.getAttribute('data-tags') || '').split(',');
+                    var show = !value || tags.indexOf(value) !== -1;
+                    card.style.display = show ? '' : 'none';
+                    if (show) { visible++; }
+                });
+                countEl.textContent = visible + (visible === 1 ? ' creature' : ' creatures');
+                noResults.style.display = visible === 0 ? 'block' : 'none';
+            }
+
+            select.addEventListener('change', applyFilter);
+            applyFilter();
+        })();
+    </script>
+}

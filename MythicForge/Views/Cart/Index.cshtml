@@ -1,0 +1,84 @@
+@model IList<MythicForge.Models.CartLine>
+@{
+    ViewBag.Title = "Your Cart";
+    decimal total = 0;
+    foreach (var l in Model) { total += l.LineTotal; }
+}
+
+<h2>Your cart</h2>
+
+@if (!Model.Any())
+{
+    <p>Your cart is empty. @Html.ActionLink("Go build a creature", "Index", "Creatures")</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Creature</th>
+                <th>Details</th>
+                <th class="text-right">Unit price</th>
+                <th>Qty</th>
+                <th class="text-right">Line total</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in Model)
+            {
+                <tr>
+                    <td style="font-size: 32px;">@line.Emoji</td>
+                    <td>
+                        <strong>@line.CreatureName</strong><br />
+                        <span class="text-muted">@line.CreatureTypeName</span>
+                    </td>
+                    <td>
+                        <span style="display:inline-block;width:12px;height:12px;border:1px solid #ccc;background:@line.ColorHex;"></span>
+                        @line.ColorName
+                        @if (!string.IsNullOrEmpty(line.OptionsSummary))
+                        {
+                            <br /><small class="text-muted">@line.OptionsSummary</small>
+                        }
+                    </td>
+                    <td class="text-right">@line.UnitPrice.ToString("C")</td>
+                    <td>
+                        @using (Html.BeginForm("UpdateQuantity", "Cart", FormMethod.Post, new { @class = "form-inline" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="lineId" value="@line.LineId" />
+                            <input type="number" name="quantity" value="@line.Quantity" min="0" class="form-control input-sm" style="width:70px;" />
+                            <button type="submit" class="btn btn-default btn-sm">Update</button>
+                        }
+                    </td>
+                    <td class="text-right">@line.LineTotal.ToString("C")</td>
+                    <td>
+                        @using (Html.BeginForm("Remove", "Cart", FormMethod.Post))
+                        {
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="lineId" value="@line.LineId" />
+                            <button type="submit" class="btn btn-link text-danger">Remove</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="5" class="text-right">Total</th>
+                <th class="text-right">@total.ToString("C")</th>
+                <th></th>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="clearfix">
+        @using (Html.BeginForm("Clear", "Cart", FormMethod.Post, new { @class = "pull-left" }))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-default">Empty cart</button>
+        }
+        @Html.ActionLink("Proceed to checkout", "Index", "Checkout", null, new { @class = "btn btn-primary pull-right" })
+    </div>
+}

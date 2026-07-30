@@ -1,0 +1,35 @@
+@model IEnumerable<MythicForge.Models.Order>
+@{
+    ViewBag.Title = "My Orders";
+}
+
+<h2>My orders</h2>
+
+@if (!Model.Any())
+{
+    <p>You have no orders yet. @Html.ActionLink("Build a creature", "Index", "Creatures")</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Order #</th>
+                <th>Date</th>
+                <th class="text-right">Total</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in Model)
+            {
+                <tr>
+                    <td>@order.Id</td>
+                    <td>@order.OrderDate.ToLocalTime().ToString("g")</td>
+                    <td class="text-right">@order.TotalPrice.ToString("C")</td>
+                    <td>@Html.ActionLink("Details", "Details", new { id = order.Id })</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

@@ -1,0 +1,66 @@
+@model MythicForge.ViewModels.CheckoutViewModel
+@{
+    ViewBag.Title = "Checkout";
+}
+
+<h2>Checkout</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <h3>Shipping details</h3>
+        @using (Html.BeginForm("Index", "Checkout", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.ShippingName)
+                @Html.TextBoxFor(m => m.ShippingName, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.ShippingName, "", new { @class = "text-danger" })
+            </div>
+            <div class="form-group">
+                @Html.LabelFor(m => m.ShippingAddress)
+                @Html.TextBoxFor(m => m.ShippingAddress, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.ShippingAddress, "", new { @class = "text-danger" })
+            </div>
+            <div class="form-group">
+                @Html.LabelFor(m => m.ShippingCity)
+                @Html.TextBoxFor(m => m.ShippingCity, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.ShippingCity, "", new { @class = "text-danger" })
+            </div>
+            <div class="form-group">
+                @Html.LabelFor(m => m.ShippingPostalCode)
+                @Html.TextBoxFor(m => m.ShippingPostalCode, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.ShippingPostalCode, "", new { @class = "text-danger" })
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg">Place order</button>
+            @Html.ActionLink("Back to cart", "Index", "Cart", null, new { @class = "btn btn-default btn-lg" })
+        }
+    </div>
+    <div class="col-md-6">
+        <h3>Order summary</h3>
+        <table class="table">
+            <tbody>
+                @foreach (var line in Model.Items)
+                {
+                    <tr>
+                        <td>@line.Emoji @line.CreatureName <span class="text-muted">(@line.CreatureTypeName)</span></td>
+                        <td class="text-right">@line.Quantity &times; @line.UnitPrice.ToString("C")</td>
+                        <td class="text-right">@line.LineTotal.ToString("C")</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="2" class="text-right">Total</th>
+                    <th class="text-right">@Model.Total.ToString("C")</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

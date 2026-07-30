@@ -1,0 +1,2 @@
+# This folder holds the local SQL Server LocalDB database file (SampleDb.mdf)
+# which is created automatically at runtime. The file itself is not committed.

@@ -1,0 +1,15 @@
+{
+  "app": "dotnet run --project src/MythicForgePipeline/MythicForgePipeline.csproj",
+  "watch": {
+    "include": ["**"],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "src/**/obj",
+      "src/**/bin"
+    ]
+  },
+  "context": {
+    "@aws-cdk/core:newStyleStackSynthesis": true
+  }
+}

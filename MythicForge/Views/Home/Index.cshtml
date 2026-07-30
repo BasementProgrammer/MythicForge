@@ -1,0 +1,27 @@
+@model IEnumerable<MythicForge.Models.CreatureType>
+@{
+    ViewBag.Title = "Home";
+}
+
+<div class="jumbotron">
+    <h1>Forge your own legend</h1>
+    <p class="lead">
+        Design a one-of-a-kind mystical creature. Pick a species, then choose wings,
+        horns, colors and magical extras &mdash; and we'll conjure it to order.
+    </p>
+    <p>@Html.ActionLink("Start building", "Index", "Creatures", null, new { @class = "btn btn-primary btn-lg" })</p>
+</div>
+
+<h2>Choose your creature</h2>
+<div class="product-grid">
+    @foreach (var creature in Model)
+    {
+        <div class="product-card">
+            <div class="product-emoji">@creature.Emoji</div>
+            <h3 class="product-name">@creature.Name</h3>
+            <p class="product-desc">@creature.Description</p>
+            <div><span class="product-price"><span class="from">from</span> @creature.BasePrice.ToString("C")</span></div>
+            @Html.ActionLink("Customize", "Customize", "Creatures", new { id = creature.Id }, new { @class = "btn btn-primary btn-block" })
+        </div>
+    }
+</div>

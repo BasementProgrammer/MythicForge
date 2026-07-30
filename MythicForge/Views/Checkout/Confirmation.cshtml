@@ -1,0 +1,47 @@
+@model MythicForge.Models.Order
+@{
+    ViewBag.Title = "Order Confirmed";
+}
+
+<div class="alert alert-success">
+    <h2>Thank you! Your order is confirmed.</h2>
+    <p>Order #@Model.Id placed on @Model.OrderDate.ToLocalTime().ToString("g").</p>
+</div>
+
+<h3>What you ordered</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Creature</th>
+            <th>Details</th>
+            <th class="text-right">Unit</th>
+            <th>Qty</th>
+            <th class="text-right">Line total</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td><strong>@item.CreatureName</strong> <span class="text-muted">(@item.CreatureTypeName)</span></td>
+                <td>@item.ColorName@(string.IsNullOrEmpty(item.OptionsSummary) ? "" : " - " + item.OptionsSummary)</td>
+                <td class="text-right">@item.UnitPrice.ToString("C")</td>
+                <td>@item.Quantity</td>
+                <td class="text-right">@item.LineTotal.ToString("C")</td>
+            </tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr>
+            <th colspan="4" class="text-right">Total</th>
+            <th class="text-right">@Model.TotalPrice.ToString("C")</th>
+        </tr>
+    </tfoot>
+</table>
+
+<p>Shipping to: @Model.ShippingName, @Model.ShippingAddress, @Model.ShippingCity @Model.ShippingPostalCode</p>
+
+<p>
+    @Html.ActionLink("View my orders", "Index", "Orders", null, new { @class = "btn btn-default" })
+    @Html.ActionLink("Build another creature", "Index", "Creatures", null, new { @class = "btn btn-primary" })
+</p>
