@@ -113,19 +113,59 @@ internal hop from the app to the collector. It is **not** something you can brow
 has no inbound trace port open, and in a load-balanced setup you don't have a stable address for it
 at all.
 
-Instead, the collector **forwards traces off the box to AWS X-Ray**, which surfaces them in the
-**CloudWatch console** under **Application monitoring → X-Ray traces** (Application Signals). This is
-the AWS deployment path — the collector only runs on Elastic Beanstalk, where the app runs with
+Instead, the collector **forwards traces off the box to AWS X-Ray**, which you view in the
+**CloudWatch console** in the same region as the environment (see the steps below). This is the AWS
+deployment path — the collector only runs on Elastic Beanstalk, where the app runs with
 `DeploymentEnvironment=AWS`, so CloudWatch forwarding happens only in the AWS environment. The CDK
 stack grants the EC2 instance role the `xray:Put*` permissions the collector needs, and the collector
 picks up the region from the instance automatically.
 
 To view your traces from the deployed app:
 
-1. Open the **AWS Console → CloudWatch** in the same region as the environment.
-2. Go to **Application monitoring → Traces** (X-Ray).
-3. Filter by the **MythicForge** service (the service name from `OpenTelemetryServiceName`) and open
-   a trace to see the request span with its child spans (including Amazon Bedrock calls).
+1. Open the **CloudWatch console** at <https://console.aws.amazon.com/cloudwatch/>.
+2. **Set the region** (top-right region selector) to the same region your Elastic Beanstalk
+   environment runs in — for example **Asia Pacific (Sydney) `ap-southeast-2`**. Traces are stored
+   per-region: the collector sends them to the region of the EC2 instance, so if the console is in a
+   different region you will see nothing.
+3. In the left navigation pane, open **Application Signals (APM)** and choose **Traces** (or
+   **Trace map** for the service graph). The console layout varies by region and rollout — on older
+   layouts this same view appears as a top-level **X-Ray traces** entry. Both show the same X-Ray
+   trace data.
+4. Make sure the time range (top-right) covers when you generated traffic, then search/filter for the
+   **MythicForge** service (the name from `OpenTelemetryServiceName`) and open a trace to see the
+   request span and its child spans (including Amazon Bedrock calls).
+
+### Traces not showing up
+
+If the region is correct but **Traces** / **Trace map** stay empty, the segments aren't reaching
+X-Ray. Work through the pipeline hop by hop. Connect to the instance first (EC2 → the environment's
+instance → **Connect → RDP**, or **Session Manager** if enabled):
+
+1. **Generate traffic.** X-Ray only has data once requests hit the app — browse a few pages on the
+   deployed site, and check the time range covers *after* that.
+2. **Is the collector running?** In PowerShell on the instance: `Get-Service otelcol`. It should be
+   `Running`. If it's missing or stopped, the `.ebextensions` install didn't complete — check the EB
+   deploy logs.
+3. **Is it accepting OTLP?** `Test-NetConnection -ComputerName localhost -Port 4318` should succeed.
+4. **Watch the collector directly** — this is the fastest way to see the real error. Stop the
+   service and run it in the foreground so its log prints to the console:
+
+   ```powershell
+   Stop-Service otelcol
+   & 'C:\otelcol\otelcol-contrib.exe' --config 'C:\otelcol\config.yaml'
+   ```
+
+   Then generate more traffic and watch the output. An `AccessDenied` / `is not authorized to
+   perform: xray:PutTraceSegments` line means the instance role is missing the X-Ray permissions
+   (see below). No errors but no activity means spans aren't arriving from the app. Press `Ctrl+C`
+   and `Start-Service otelcol` when done.
+5. **IAM permissions.** The `awsxray` exporter needs `xray:Put*` on the instance role. These are
+   granted by the CDK stack, but an environment **deployed before** those permissions were added
+   won't have them — **redeploy the CDK stack** so the role update (and the collector config) apply.
+   IAM changes propagate to the running instance within a few minutes; no instance replacement needed.
+6. **Confirm spans leave the app.** If step 4 shows no incoming spans, add `debug` to the `traces`
+   pipeline's `exporters` list in the collector config and re-run step 4 — `debug` prints every span
+   the collector receives, isolating whether the problem is app→collector or collector→X-Ray.
 
 **Using a different backend instead of CloudWatch.** Edit the collector config — preferably the
 `files:` block in `.ebextensions/02-install-otel-collector.config` so it survives redeploys — and
