@@ -56,6 +56,84 @@ These are Windows-only technologies. To build and run the app you need:
 - `Web.config` — the `SampleDbContext` connection string points at `|DataDirectory|\SampleDb.mdf`,
   which resolves to the `App_Data` folder.
 
+## Observability (OpenTelemetry)
+
+The app is instrumented with **OpenTelemetry** distributed tracing (this replaced the earlier
+AWS X-Ray integration). Each incoming HTTP request produces a trace, and outgoing calls — including
+Amazon Bedrock image generation, which goes over HttpClient — appear as child spans. Traces are
+exported over **OTLP (HTTP/protobuf)**.
+
+Setup lives in `MythicForge/Services/OpenTelemetryConfig.cs`, is started in `Global.asax.cs`
+(`Application_Start`), and the request-tracing HTTP module is registered in `Web.config` under
+`<system.webServer>/<modules>`. Unlike the old X-Ray integration, tracing runs in **every**
+environment (it is not gated by `DeploymentEnvironment`).
+
+### Where traces go
+
+The exporter sends to the first endpoint it finds:
+
+1. The `OpenTelemetryOtlpEndpoint` app setting in `Web.config`, or
+2. the `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable, or
+3. the OTLP default (`http://localhost:4318`) if neither is set.
+
+The service name reported on spans comes from the `OpenTelemetryServiceName` app setting
+(default `MythicForge`).
+
+### View traces locally
+
+The quickest way to see traces on your machine is to run a local backend that speaks OTLP and has
+a UI. Jaeger all-in-one works well:
+
+1. Start Jaeger (requires Docker), which accepts OTLP directly and serves a UI on port 16686:
+
+   ```
+   docker run --rm -p 16686:16686 -p 4318:4318 jaegertracing/all-in-one:latest
+   ```
+
+2. Point the app at it by setting the endpoint in `MythicForge/Web.config`:
+
+   ```xml
+   <add key="OpenTelemetryOtlpEndpoint" value="http://localhost:4318" />
+   ```
+
+3. Run the app (F5), click around the site to generate some requests, then open the Jaeger UI at
+   <http://localhost:16686>, choose the **MythicForge** service, and search for traces.
+
+If you would rather just confirm spans are being produced without a UI, run the OpenTelemetry
+Collector locally with a `debug` exporter (same config shipped to the server, see below) and watch
+its console output.
+
+### View traces on the deployed (Elastic Beanstalk) instance
+
+The pipeline installs an **OpenTelemetry Collector** on the EB instance as a Windows service
+(`otelcol`) via `.ebextensions/02-install-otel-collector.config`. The app is pointed at it with
+`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` (set by the CDK stack). Here `localhost` refers
+to the **EB instance itself** — the app and the collector share the host, so this is only the
+internal hop from the app to the collector. It is **not** something you can browse to: the instance
+has no inbound trace port open, and in a load-balanced setup you don't have a stable address for it
+at all.
+
+Instead, the collector **forwards traces off the box to AWS X-Ray**, which surfaces them in the
+**CloudWatch console** under **Application monitoring → X-Ray traces** (Application Signals). This is
+the AWS deployment path — the collector only runs on Elastic Beanstalk, where the app runs with
+`DeploymentEnvironment=AWS`, so CloudWatch forwarding happens only in the AWS environment. The CDK
+stack grants the EC2 instance role the `xray:Put*` permissions the collector needs, and the collector
+picks up the region from the instance automatically.
+
+To view your traces from the deployed app:
+
+1. Open the **AWS Console → CloudWatch** in the same region as the environment.
+2. Go to **Application monitoring → Traces** (X-Ray).
+3. Filter by the **MythicForge** service (the service name from `OpenTelemetryServiceName`) and open
+   a trace to see the request span with its child spans (including Amazon Bedrock calls).
+
+**Using a different backend instead of CloudWatch.** Edit the collector config — preferably the
+`files:` block in `.ebextensions/02-install-otel-collector.config` so it survives redeploys — and
+change the `traces` pipeline's `exporters` list. For example, add an `otlphttp` exporter pointed at a
+managed/SaaS vendor or a self-hosted Jaeger/Tempo you can reach, then restart the `otelcol` service.
+You can also add `debug` to the exporters list to have spans written to the collector's own log for
+troubleshooting.
+
 ## Project layout
 
 ```

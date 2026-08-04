@@ -86,11 +86,25 @@ namespace MythicForgePipeline
                 {
                     ManagedPolicy.FromAwsManagedPolicyName("AWSElasticBeanstalkWebTier"),
                     ManagedPolicy.FromAwsManagedPolicyName("AWSElasticBeanstalkWorkerTier"),
-                    ManagedPolicy.FromAwsManagedPolicyName("AWSElasticBeanstalkMulticontainerDocker"),
-                    // Lets the X-Ray daemon on the instance upload trace segments.
-                    ManagedPolicy.FromAwsManagedPolicyName("AWSXRayDaemonWriteAccess")
+                    ManagedPolicy.FromAwsManagedPolicyName("AWSElasticBeanstalkMulticontainerDocker")
                 }
             });
+
+            // Let the on-instance OpenTelemetry Collector forward traces to AWS X-Ray
+            // (surfaced in the CloudWatch console). These are the same permissions the old
+            // X-Ray daemon used; X-Ray does not support resource-level scoping for them.
+            instanceRole.AddToPolicy(new PolicyStatement(new PolicyStatementProps
+            {
+                Actions = new[]
+                {
+                    "xray:PutTraceSegments",
+                    "xray:PutTelemetryRecords",
+                    "xray:GetSamplingRules",
+                    "xray:GetSamplingTargets",
+                    "xray:GetSamplingStatisticSummaries"
+                },
+                Resources = new[] { "*" }
+            }));
 
             // Allow the app to generate creature preview images with Amazon Bedrock using
             // Stability AI's text-to-image models (hosted in us-west-2).
@@ -156,27 +170,16 @@ namespace MythicForgePipeline
                         OptionName = "EnvironmentType",
                         Value = "SingleInstance"
                     },
-                    // Run the AWS X-Ray daemon on the instance so the app can submit traces.
-                    new CfnEnvironment.OptionSettingProperty
-                    {
-                        Namespace = "aws:elasticbeanstalk:xray",
-                        OptionName = "XRayEnabled",
-                        Value = "true"
-                    },
-                    // X-Ray SDK configuration passed to the app as environment variables.
+                    // OpenTelemetry replaced AWS X-Ray. The app exports OTLP traces to the
+                    // OpenTelemetry Collector installed on the instance by
+                    // .ebextensions/02-install-otel-collector.config, which listens on
+                    // localhost:4318 (OTLP/HTTP). The OTLP exporter appends the /v1/traces
+                    // path to this base endpoint.
                     new CfnEnvironment.OptionSettingProperty
                     {
                         Namespace = "aws:elasticbeanstalk:application:environment",
-                        OptionName = "AWS_XRAY_TRACING_NAME",
-                        Value = "MythicForge"
-                    },
-                    new CfnEnvironment.OptionSettingProperty
-                    {
-                        Namespace = "aws:elasticbeanstalk:application:environment",
-                        // Don't throw if a subsegment is created without an active segment
-                        // (e.g. background/startup AWS calls); just log it.
-                        OptionName = "AWS_XRAY_CONTEXT_MISSING",
-                        Value = "LOG_ERROR"
+                        OptionName = "OTEL_EXPORTER_OTLP_ENDPOINT",
+                        Value = "http://localhost:4318"
                     }
                 }
             });

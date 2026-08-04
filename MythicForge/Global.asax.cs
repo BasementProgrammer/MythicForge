@@ -3,33 +3,21 @@ using System.Web;
 using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
-using Amazon.XRay.Recorder.Handlers.AspNet;
-using Amazon.XRay.Recorder.Handlers.AwsSdk;
 using MythicForge.Data;
+using MythicForge.Services;
 
 namespace MythicForge
 {
     public class MvcApplication : HttpApplication
     {
-        // Service name shown for this application in the AWS X-Ray console.
-        private const string XRayServiceName = "MythicForge";
-
-        /// <summary>
-        /// Runs for every HttpApplication instance. Hook AWS X-Ray request tracing here so
-        /// each incoming request produces an X-Ray segment (with child subsegments for the
-        /// AWS SDK calls instrumented in Application_Start).
-        /// </summary>
-        public override void Init()
-        {
-            base.Init();
-            AWSXRayASPNET.RegisterXRay(this, XRayServiceName);
-        }
-
         protected void Application_Start()
         {
-            // Trace all AWS SDK calls (e.g. Amazon Bedrock image generation) as X-Ray
-            // subsegments. Must run before any AWS client is created.
-            AWSSDKHandler.RegisterXRayForAllServices();
+            // Start OpenTelemetry tracing before any AWS client or outgoing HTTP call is
+            // created, so HttpClient instrumentation captures them (this replaces the
+            // former AWS X-Ray AWS-SDK subsegment tracing). Incoming request tracing is
+            // handled by the TelemetryHttpModule registered in Web.config plus
+            // AddAspNetInstrumentation(). Telemetry runs in every environment.
+            OpenTelemetryConfig.Initialize();
 
             // Register the initializer that drops, recreates and reseeds the
             // local database, then force it to run immediately so the app
@@ -44,6 +32,13 @@ namespace MythicForge
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+        }
+
+        protected void Application_End()
+        {
+            // Flush and dispose the tracer provider so buffered spans are exported when
+            // the application shuts down or the app pool recycles.
+            OpenTelemetryConfig.Shutdown();
         }
     }
 }

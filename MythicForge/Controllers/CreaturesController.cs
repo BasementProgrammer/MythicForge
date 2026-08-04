@@ -122,12 +122,20 @@ namespace MythicForge.Controllers
 
         // POST: Creatures/Preview  (AJAX) -> generates a live image with Amazon Bedrock.
         /// <summary>
-        /// Whether Amazon Bedrock image generation is enabled (Web.config app setting
-        /// "BedrockImageGenerationEnabled"). Enabled by default; only the literal "false"
-        /// disables it.
+        /// Whether Amazon Bedrock image generation is enabled. Bedrock is an AWS-native
+        /// feature, so it is always off unless the app is running in an AWS environment
+        /// (Web.config "DeploymentEnvironment" = "AWS"). Within an AWS environment it is
+        /// enabled by default via the "BedrockImageGenerationEnabled" app setting; only the
+        /// literal "false" disables it.
         /// </summary>
         private static bool IsImageGenerationEnabled()
         {
+            // In a non-AWS (e.g. Local) environment, disable all AWS-specific features.
+            if (!DeploymentEnvironment.IsAws)
+            {
+                return false;
+            }
+
             var raw = System.Configuration.ConfigurationManager.AppSettings["BedrockImageGenerationEnabled"];
             return string.IsNullOrWhiteSpace(raw)
                 || !raw.Trim().Equals("false", StringComparison.OrdinalIgnoreCase);
