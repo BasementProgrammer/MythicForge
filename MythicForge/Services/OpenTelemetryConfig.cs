@@ -14,8 +14,8 @@ namespace MythicForge.Services
     ///   * Incoming ASP.NET requests are traced by the TelemetryHttpModule registered in
     ///     Web.config (&lt;system.webServer&gt;/&lt;modules&gt;) together with
     ///     <c>AddAspNetInstrumentation()</c> here.
-    ///   * Outgoing HTTP calls (including AWS SDK calls such as Amazon Bedrock, which use
-    ///     HttpClient under the hood) are traced by <c>AddHttpClientInstrumentation()</c>.
+    ///   * Outgoing HTTP calls made via HttpClient are traced by
+    ///     <c>AddHttpClientInstrumentation()</c>.
     ///   * Spans are exported over OTLP to a collector (e.g. the OpenTelemetry Collector,
     ///     or any OTLP-compatible backend).
     ///

@@ -1166,46 +1166,11 @@ namespace MythicForge.Data
                 ["Banshee"] = "Air, Spirit"
             };
 
-            // Per-creature prompt templates: a descriptive subject phrase that gives the
-            // Bedrock image model clear context about what the creature is. The final prompt
-            // prepends the chosen color and appends the category-qualified options.
-            var promptTemplates = new Dictionary<string, string>
-            {
-                ["Dragon"] = "dragon, a huge winged fire-breathing reptilian beast with horns, clawed feet and a long spiked tail",
-                ["Unicorn"] = "unicorn, an elegant horse-like creature with a single spiraled horn on its forehead and a flowing mane",
-                ["Giant"] = "giant, a towering muscular humanoid colossus",
-                ["Pixie"] = "pixie, a tiny winged fairy sprite glowing with magic",
-                ["Phoenix"] = "phoenix, a majestic firebird with radiant flaming plumage and outstretched wings",
-                ["Kraken"] = "kraken, an enormous deep-sea monster with a bulbous head and many massive tentacles",
-                ["Griffin"] = "griffin, a beast with the head, wings and talons of an eagle and the body of a lion",
-                ["Kitsune"] = "kitsune, a mystical fox spirit with multiple flowing tails and glowing markings",
-                ["Djinn"] = "djinn, a genie-like spirit with a swirling smoky lower body rising from a vessel",
-                ["Naga"] = "naga, a divine half-human serpent being with a long scaled snake tail and a cobra-like hood",
-                ["Golem"] = "golem, a hulking humanoid figure built of rough stone and clay",
-                ["Kelpie"] = "kelpie, a supernatural water horse with a dripping mane of river weeds",
-                ["Mermaid"] = "mermaid, a graceful being with a human upper body and a long shimmering fish tail",
-                ["Werewolf"] = "werewolf, a large upright wolf-like creature covered in thick shaggy fur, with pointed ears and clawed hands",
-                ["Cyclops"] = "cyclops, a towering muscular one-eyed giant",
-                ["Basilisk"] = "basilisk, a monstrous crowned serpent with a scaled reptilian body and a deadly gaze",
-                ["Sphinx"] = "sphinx, a creature with the body of a lion and the head of a human",
-                ["Centaur"] = "centaur, a single mythological being that is human from the waist up and a horse from the waist down, with a human torso seamlessly fused at the waist onto a four-legged horse body (one merged creature, absolutely not a person riding a horse)",
-                ["Yeti"] = "yeti, a large shaggy ape-like snow beast",
-                ["Chimera"] = "chimera, a monstrous hybrid with the body of a lion, a goat's head rising from its back and a serpent tail",
-                ["Leviathan"] = "leviathan, a colossal armored sea serpent monster",
-                ["Roc"] = "roc, a gigantic bird of prey with an enormous wingspan and huge talons",
-                ["Hydra"] = "hydra, a large serpentine water monster with multiple snake heads on long necks",
-                ["Banshee"] = "banshee, a ghostly wailing female spirit shrouded in tattered robes"
-            };
-
             foreach (var creature in creatures)
             {
                 if (creatureTags.TryGetValue(creature.Name, out var tagValue))
                 {
                     creature.Tags = tagValue;
-                }
-                if (promptTemplates.TryGetValue(creature.Name, out var templateValue))
-                {
-                    creature.PromptTemplate = templateValue;
                 }
             }
 

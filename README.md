@@ -59,9 +59,8 @@ These are Windows-only technologies. To build and run the app you need:
 ## Observability (OpenTelemetry)
 
 The app is instrumented with **OpenTelemetry** distributed tracing (this replaced the earlier
-AWS X-Ray integration). Each incoming HTTP request produces a trace, and outgoing calls — including
-Amazon Bedrock image generation, which goes over HttpClient — appear as child spans. Traces are
-exported over **OTLP (HTTP/protobuf)**.
+AWS X-Ray integration). Each incoming HTTP request produces a trace, and outgoing HttpClient calls
+appear as child spans. Traces are exported over **OTLP (HTTP/protobuf)**.
 
 Setup lives in `MythicForge/Services/OpenTelemetryConfig.cs`, is started in `Global.asax.cs`
 (`Application_Start`), and the request-tracing HTTP module is registered in `Web.config` under
@@ -133,7 +132,7 @@ To view your traces from the deployed app:
    trace data.
 4. Make sure the time range (top-right) covers when you generated traffic, then search/filter for the
    **MythicForge** service (the name from `OpenTelemetryServiceName`) and open a trace to see the
-   request span and its child spans (including Amazon Bedrock calls).
+   request span and its child spans.
 
 ### Traces not showing up
 

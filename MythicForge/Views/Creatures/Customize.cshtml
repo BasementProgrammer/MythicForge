@@ -4,7 +4,7 @@
 }
 
 <div class="row">
-    <div class="@(Model.ImageGenerationEnabled ? "col-md-7" : "col-md-12")">
+    <div class="col-md-12">
         <h2>@Model.Emoji Build your @Model.Name</h2>
         <p>@Model.Description</p>
 
@@ -79,41 +79,11 @@
             @Html.ActionLink("Back to creatures", "Index", null, new { @class = "btn btn-default btn-lg" })
         }
     </div>
-
-    @if (Model.ImageGenerationEnabled)
-    {
-        <div class="col-md-5">
-            <div class="build-sidebar">
-                <div class="panel">
-                    <div class="panel-heading">Preview</div>
-                    <div class="panel-body text-center">
-                        <div class="preview-frame">
-                            <img id="previewImage" class="preview-img" alt="AI-generated preview of your creature" style="display:none;" />
-                            <div id="previewPlaceholder" class="preview-placeholder">
-                                <div style="font-size:56px;line-height:1;">@Model.Emoji</div>
-                                <p class="text-muted">Choose your options, then click <strong>Generate preview</strong> to see your creature.</p>
-                            </div>
-                            <div id="previewSpinner" class="preview-spinner" style="display:none;">
-                                <div class="spinner-ring"></div>
-                                <p class="text-muted">Conjuring your creature&hellip;</p>
-                            </div>
-                        </div>
-                        <p id="previewError" class="text-danger" style="display:none;margin-top:10px;"></p>
-                        <p id="previewPrompt" class="text-muted" style="display:none;font-size:.82rem;font-style:italic;margin-top:10px;"></p>
-                        <button type="button" id="regenBtn" class="btn btn-primary btn-block" style="margin-top:12px;">
-                            Generate preview
-                        </button>
-                        <p class="text-muted" style="font-size:.78rem;margin-top:8px;">Powered by Amazon Bedrock (Stability AI).</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
 </div>
 
 @section Scripts {
     <script>
-        // Live price estimate (always on, no Bedrock dependency).
+        // Live price estimate.
         (function () {
             var basePrice = @Model.BasePrice.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var priceDisplay = document.getElementById('priceDisplay');
@@ -148,84 +118,4 @@
             recalc();
         })();
     </script>
-
-    @if (Model.ImageGenerationEnabled)
-    {
-        <text>
-        <script>
-            // Amazon Bedrock AI preview (generated only on explicit button click).
-            (function () {
-                var previewUrl = '@Url.Action("Preview", "Creatures")';
-                var creatureTypeId = document.querySelector('input[name="CreatureTypeId"]').value;
-
-                var img = document.getElementById('previewImage');
-                var placeholder = document.getElementById('previewPlaceholder');
-                var spinner = document.getElementById('previewSpinner');
-                var errorEl = document.getElementById('previewError');
-                var promptEl = document.getElementById('previewPrompt');
-                var genBtn = document.getElementById('regenBtn');
-                var inFlight = false;
-
-                function generatePreview() {
-                    if (inFlight) { return; }
-                    inFlight = true;
-                    genBtn.disabled = true;
-
-                    errorEl.style.display = 'none';
-                    placeholder.style.display = 'none';
-                    if (img.getAttribute('src')) { img.style.opacity = '0.35'; }
-                    spinner.style.display = 'block';
-
-                    var params = new URLSearchParams();
-                    params.append('creatureTypeId', creatureTypeId);
-
-                    var color = document.querySelector('input[name="ColorId"]:checked');
-                    params.append('colorId', color ? color.value : '0');
-
-                    document.querySelectorAll('input[name="SelectedOptionIds"]:checked').forEach(function (el) {
-                        params.append('selectedOptionIds', el.value);
-                    });
-
-                    // Include the anti-forgery token so the endpoint only accepts same-site requests.
-                    var token = document.querySelector('input[name="__RequestVerificationToken"]');
-                    if (token) { params.append('__RequestVerificationToken', token.value); }
-
-                    fetch(previewUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: params.toString()
-                    })
-                    .then(function (r) { return r.json(); })
-                    .then(function (data) {
-                        spinner.style.display = 'none';
-                        if (data && data.ok) {
-                            img.src = data.image;
-                            img.style.opacity = '1';
-                            img.style.display = 'block';
-                            if (data.prompt) {
-                                promptEl.textContent = '\u201C' + data.prompt + '\u201D';
-                                promptEl.style.display = 'block';
-                            }
-                        } else {
-                            img.style.opacity = '1';
-                            errorEl.textContent = 'Could not generate preview: ' + ((data && data.error) || 'unknown error');
-                            errorEl.style.display = 'block';
-                            if (img.style.display === 'none') { placeholder.style.display = 'block'; }
-                        }
-                    })
-                    .catch(function (e) {
-                        spinner.style.display = 'none';
-                        img.style.opacity = '1';
-                        errorEl.textContent = 'Could not generate preview: ' + e.message;
-                        errorEl.style.display = 'block';
-                        if (img.style.display === 'none') { placeholder.style.display = 'block'; }
-                    })
-                    .then(function () { inFlight = false; genBtn.disabled = false; });
-                }
-
-                genBtn.addEventListener('click', generatePreview);
-            })();
-        </script>
-        </text>
-    }
 }

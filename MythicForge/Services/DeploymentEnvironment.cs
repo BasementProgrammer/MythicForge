@@ -6,10 +6,13 @@ namespace MythicForge.Services
     /// <summary>
     /// Reads the "DeploymentEnvironment" Web.config app setting and reports whether the
     /// application is running against AWS. Recognized values are "AWS" and "Local".
-    /// When the value is anything other than "AWS" (case-insensitive) all AWS-native
-    /// features (currently Amazon Bedrock image generation) are disabled so the
-    /// application can run locally without an AWS account or credentials.
-    /// (OpenTelemetry tracing is vendor-neutral and runs in every environment.)
+    /// The value is intended to gate AWS-native features so the application can run locally
+    /// without an AWS account or credentials.
+    ///
+    /// NOTE: no application feature currently uses this flag. The AWS-specific features it
+    /// was introduced for (Amazon Bedrock image generation and AWS X-Ray) have both been
+    /// removed, and OpenTelemetry tracing is vendor-neutral and runs in every environment.
+    /// It is kept as a hook for future AWS-native features.
     /// </summary>
     public static class DeploymentEnvironment
     {

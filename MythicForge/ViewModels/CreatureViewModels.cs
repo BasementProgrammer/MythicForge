@@ -19,14 +19,10 @@ namespace MythicForge.ViewModels
         public IList<OptionCategory> Categories { get; set; }
         public IList<Color> Colors { get; set; }
 
-        /// <summary>When false, the Bedrock AI image preview is hidden from the build page.</summary>
-        public bool ImageGenerationEnabled { get; set; }
-
         public CustomizeViewModel()
         {
             Categories = new List<OptionCategory>();
             Colors = new List<Color>();
-            ImageGenerationEnabled = true;
         }
     }
 

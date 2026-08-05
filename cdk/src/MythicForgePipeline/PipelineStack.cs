@@ -106,19 +106,6 @@ namespace MythicForgePipeline
                 Resources = new[] { "*" }
             }));
 
-            // Allow the app to generate creature preview images with Amazon Bedrock using
-            // Stability AI's text-to-image models (hosted in us-west-2).
-            instanceRole.AddToPolicy(new PolicyStatement(new PolicyStatementProps
-            {
-                Actions = new[] { "bedrock:InvokeModel" },
-                Resources = new[]
-                {
-                    "arn:aws:bedrock:us-west-2::foundation-model/stability.stable-image-ultra-v1:1",
-                    "arn:aws:bedrock:us-west-2::foundation-model/stability.sd3-5-large-v1:0",
-                    "arn:aws:bedrock:us-west-2::foundation-model/stability.stable-image-core-v1:1"
-                }
-            }));
-
             var instanceProfile = new CfnInstanceProfile(this, "EbInstanceProfile", new CfnInstanceProfileProps
             {
                 Roles = new[] { instanceRole.RoleName }

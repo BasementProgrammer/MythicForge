@@ -48,14 +48,6 @@ namespace MythicForge.Models
         [StringLength(200)]
         public string Tags { get; set; }
 
-        /// <summary>
-        /// A descriptive noun phrase used as the subject of the Bedrock image prompt,
-        /// e.g. "werewolf, a hulking bipedal wolf-human hybrid covered in shaggy fur".
-        /// Gives the image model clear context about the creature.
-        /// </summary>
-        [StringLength(500)]
-        public string PromptTemplate { get; set; }
-
         public virtual ICollection<OptionCategory> OptionCategories { get; set; }
     }
 

@@ -12,11 +12,11 @@ namespace MythicForge
     {
         protected void Application_Start()
         {
-            // Start OpenTelemetry tracing before any AWS client or outgoing HTTP call is
-            // created, so HttpClient instrumentation captures them (this replaces the
-            // former AWS X-Ray AWS-SDK subsegment tracing). Incoming request tracing is
-            // handled by the TelemetryHttpModule registered in Web.config plus
-            // AddAspNetInstrumentation(). Telemetry runs in every environment.
+            // Start OpenTelemetry tracing before any outgoing HTTP call is made, so
+            // HttpClient instrumentation captures them (this replaces the former AWS X-Ray
+            // tracing). Incoming request tracing is handled by the TelemetryHttpModule
+            // registered in Web.config plus AddAspNetInstrumentation(). Telemetry runs in
+            // every environment.
             OpenTelemetryConfig.Initialize();
 
             // Register the initializer that drops, recreates and reseeds the

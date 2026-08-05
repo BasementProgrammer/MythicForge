@@ -428,52 +428,6 @@ footer {
     h1 { font-size: 2rem; }
 }
 
-/* ---------- Customize sidebar & Bedrock live preview ---------- */
-.build-sidebar { position: sticky; top: 88px; }
-
-.preview-frame {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    background: radial-gradient(circle at 50% 40%, #ede9fe, #f6f7fb 75%);
-    border: 1px solid var(--line);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.preview-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: opacity .2s ease;
-    display: block;
-}
-.preview-placeholder { padding: 20px; }
-.preview-placeholder p { margin: 8px 0 0; }
-
-.preview-spinner {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    background: rgba(255, 255, 255, .55);
-    backdrop-filter: blur(1px);
-}
-.spinner-ring {
-    width: 42px;
-    height: 42px;
-    border: 4px solid rgba(124, 58, 237, .25);
-    border-top-color: var(--brand-600);
-    border-radius: 50%;
-    animation: spin 0.9s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
 /* ---------- Catalog filter toolbar & tag chips ---------- */
 .catalog-toolbar {
     display: flex;
